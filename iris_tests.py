@@ -7,6 +7,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix
 
 class TestIrisPipeline(unittest.TestCase):
+
     def setUp(self):
         self.iris = load_iris()
         self.X = self.iris.data
@@ -14,55 +15,56 @@ class TestIrisPipeline(unittest.TestCase):
         self.feature_names = self.iris.feature_names
         self.target_names = self.iris.target_names
 
-        def test_data_loading(self):
-            self.assertEqual(self.X.shape, (150, 4)) #? 150 samples, 4 features
-            self.assertEqual(self.y.shape, (150,))
-            self.assertEqual(len(self.feature_names), 4)
-            self.assertEqual(len(self.target_names), 3)
+    def test_data_loading(self):
+        self.assertEqual(self.X.shape, (150, 4))
+        self.assertEqual(self.y.shape, (150,))
+        self.assertEqual(len(self.feature_names), 4)
+        self.assertEqual(len(self.target_names), 3)
 
-            def test_missing_and_duplicates(self):
-                data = pd.DataFrame(self.X, columns=self.feature_names)
-                self.assertTrue(data.isnull().sum().sum() == 0) 
+    def test_missing_and_duplicates(self):
+        data = pd.DataFrame(self.X, columns=self.feature_names)
+        self.assertEqual(data.isnull().sum().sum(), 0)
 
-                duplicate_count = data.duplicated().sum()
-                if duplicate_count > 0:
-                    data.drop_duplicates(inplace=True)
+        duplicate_count = data.duplicated().sum()
+        if duplicate_count > 0:
+            data = data.drop_duplicates()
 
-                self.assertEqual(data.duplicated().sum(), 0)
+        self.assertEqual(data.duplicated().sum(), 0)
 
-            def test_data_splitting(self):
-                X_train, X_test, y_train, y_test = train_test_split(self.X, self.y, test_size=0.2, random_state=42)
-                self.assertEqual(len(X_train), 120) #? 80% of 150
-                self.assertEqual(len(X_test), 30)   #? 20% of 150
+    def test_data_splitting(self):
+        X_train, X_test, y_train, y_test = train_test_split(
+            self.X, self.y, test_size=0.2, random_state=42
+        )
+        self.assertEqual(len(X_train), 120)
+        self.assertEqual(len(X_test), 30)
 
-            def test_scaling(self):
-                X_train, X_test, y_train, y_test = train_test_split(self.X, self.y, test_size=0.2, random_state=42)
-                scaler = StandardScaler()
-                X_train_scaled = scaler.fit_transform(X_train)
-                X_test_scaled = scaler.transform(X_test)
-                self.assertAlmostEqual(X_train_scaled.mean(), 0, delta=0.1)
-                self.assertAlmostEqual(X_train_scaled.std(), 1, delta=0.1)
+    def test_scaling(self):
+        X_train, X_test, y_train, y_test = train_test_split(
+            self.X, self.y, test_size=0.2, random_state=42
+        )
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
 
-            def test_model_training_and_evaluation(self):
-                X_train, X_test, y_train, y_test = train_test_split(self.X, self.y, test_size=0.2, random_state=42)
-                scaler = StandardScaler()
-                X_train_scaled = scaler.fit_transform(X_train)
-                X_test_scaled = scaler.transform(X_test)
+        self.assertAlmostEqual(X_train_scaled.mean(), 0, delta=0.1)
+        self.assertAlmostEqual(X_train_scaled.std(), 1, delta=0.1)
 
-                model = LogisticRegression()
-                model.fit(X_train_scaled, y_train)
-                y_pred = model.predict(X_test_scaled)
+    def test_model_training_and_evaluation(self):
+        X_train, X_test, y_train, y_test = train_test_split(
+            self.X, self.y, test_size=0.2, random_state=42
+        )
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled = scaler.transform(X_test)
 
-                #? Test accuracy
-                accuracy = accuracy_score(y_test, y_pred)
-                self.assertGreaterEqual(accuracy, 0.9) #? Expecting at least 90% accuracy
+        model = LogisticRegression(max_iter=200)
+        model.fit(X_train_scaled, y_train)
+        y_pred = model.predict(X_test_scaled)
 
-                cm = confusion_matrix(y_test, y_pred)
-                self.assertEqual(cm.shape, (3, 3)) 
+        accuracy = accuracy_score(y_test, y_pred)
+        self.assertGreaterEqual(accuracy, 0.9)
+
+        cm = confusion_matrix(y_test, y_pred)
+        self.assertEqual(cm.shape, (3, 3))
 
 if __name__ == '__main__':
     unittest.main()
-
-
-
-        
